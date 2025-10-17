@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: modelkit-app
+  labels:
+    app: modelkit-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: modelkit-app
+  template:
+    metadata:
+      labels:
+        app: modelkit-app
+    spec:
+      volumes:
+        - name: modelkit-storage
+          emptyDir: {}
+
+      initContainers:
+        - name: kitops-init
+          image: ghcr.io/kitops-ml/kitops-init:v1.8.0
+          env:
+            - name: MODELKIT_REF
+              value: "jozu.ml/naga.linux17/modelkit:1.0.0"
+            - name: UNPACK_PATH
+              value: "/modelkit"
+            - name: JOZU_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: jozu-secret
+                  key: JOZU_USERNAME
+            - name: JOZU_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jozu-secret
+                  key: JOZU_PASSWORD
+          volumeMounts:
+            - name: modelkit-storage
+              mountPath: /modelkit
+
+      containers:
+        - name: prediction-app
+          image: nagalinux17/predictionapp:1.0.1
+          command: ["uvicorn"]
+          args:
+            - "app.main:app"
+            - "--host=0.0.0.0"
+            - "--port=8000"
+          env:
+            - name: MODEL_PATH
+              value: "/modelkit/model.pkl"
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: modelkit-storage
+              mountPath: /modelkit
+
