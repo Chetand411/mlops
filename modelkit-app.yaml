@@ -43,7 +43,7 @@ spec:
 
       containers:
         - name: prediction-app
-          image: nagalinux17/torch-fastapi:1.0.8
+          image: nagalinux17/torch-fastapi:1.0.9
           command: ["uvicorn"]
           args:
             - "main:app"
